@@ -27,7 +27,7 @@ var db = new sqlite3.Database(db_filename, sqlite3.OPEN_READONLY, (err) => {
         console.log('Now connected to ' + db_filename);
     }
 });
-//res.json(rows)
+
 app.get('/codes', (req, res, next) => {
 	let codes = {};
 	let key = "C";
@@ -102,7 +102,6 @@ app.get('/neighborhoods', (req, res, next) => {
 		});
 	})
 	.then(data=>{
-		let formatter = "json";
 
 		if(req.query.hasOwnProperty("format") && req.query.format.toLowerCase() === "xml")
 		{

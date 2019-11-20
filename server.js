@@ -27,7 +27,7 @@ var db = new sqlite3.Database(db_filename, sqlite3.OPEN_READONLY, (err) => {
         console.log('Now connected to ' + db_filename);
     }
 });
-//res.json(rows)
+
 app.get('/codes', (req, res, next) => {
 	let codes = {};
 	let key = "C";
@@ -41,16 +41,15 @@ app.get('/codes', (req, res, next) => {
 				rows.forEach(function (row) {                
 					if (req.query.hasOwnProperty("code")) {				
 						var code_list =  req.query.code.split(',');
-						for(let i =0; i < code_list.length; i ++)
+						for(let i = 0; i < code_list.length; i++)
 						{
 							if (row.code == code_list[i]) {
-								console.log("row code is:" + row.code);
-								codes[key.concat("",code_list[i])] = row.incident_type;
+								codes[key.concat(code_list[i])] = row.incident_type;
 							}
 						}
 					}
 					else {
-						codes[key.concat("",row.code)] = row.incident_type;
+						codes[key.concat(row.code)] = row.incident_type;
 					}
 				})
 			}		
@@ -84,16 +83,16 @@ app.get('/neighborhoods', (req, res, next) => {
 					if(req.query.hasOwnProperty("neighborhoodNumber")){
 							
 						var neighborhoodNumber_list =  req.query.code.split(',');
-						for(let i =0; i < neighborhoodNumber_list.length; i ++)
+						for(let i = 0; i < neighborhoodNumber_list.length; i++)
 						{
 							if(row.neighborhood_number == neighborhoodNumber_list[i])
 							{
-								neighborhoods[key.concat("", neighborhoodNumber_list[i])] = row.neighborhood_name;
+								neighborhoods[key.concat(neighborhoodNumber_list[i])] = row.neighborhood_name;
 							}
 						}
 					}
 					else{
-						neighborhoods[key.concat("",row.neighborhood_number)] = row.neighborhood_name;
+						neighborhoods[key.concat(row.neighborhood_number)] = row.neighborhood_name;
 					}
 	
 				})
@@ -102,11 +101,10 @@ app.get('/neighborhoods', (req, res, next) => {
 		});
 	})
 	.then(data=>{
-		let formatter = "json";
 
 		if(req.query.hasOwnProperty("format") && req.query.format.toLowerCase() === "xml")
 		{
-			res.type("xml").send(json2xml.parse("codes", data)); 
+			res.type("xml").send(json2xml.parse("neighborhood", data)); 
 		}
 		else{
 			res.type('json').send(neighborhoods);

@@ -113,7 +113,6 @@ app.get('/neighborhoods', (req, res, next) => {
 	})
 });
 
-//incidents handler
 app.get('/incidents', (req, res, next) => {
 	let incidents = {};
 	let key = "I";
@@ -169,7 +168,6 @@ app.get('/incidents', (req, res, next) => {
 			} else {
 				let num_rows=Object.keys(rows).length;
 				for(let i = 0; i < num_rows; i++) {
-					//console.log(i);
 					let id=key.concat("",rows[i].case_number);
 					incidents[id] = {};
 					incidents[id]["date"]=rows[i].date_time.split("T")[0];

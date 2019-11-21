@@ -248,7 +248,7 @@ app.get('/incidents', (req, res) => {
 
 		if(req.query.hasOwnProperty("format") && req.query.format.toLowerCase() === "xml")
 		{
-			res.type("xml").send(json2xml.parse("codes", data)); 
+			res.type("xml").send(json2xml.parse("incidents", data)); 
 		}
 		else{
 			res.type('json').send(incidents);

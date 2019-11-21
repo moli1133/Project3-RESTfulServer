@@ -262,10 +262,6 @@ app.put('/new-incident',(req, res) => {
 	let new_incident = {
 		case_number: req.body.case_number
 	}
-
-	if(req.body.hasOwnProperty("case_number") == false) {
-        res.status(500).send("Need a case number");
-	}
 	
 	if(req.body.hasOwnProperty("date")) {
         new_incident["date_time"] = req.body.date;

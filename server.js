@@ -41,8 +41,7 @@ app.get('/codes', (req, res, next) => {
 				rows.forEach(function (row) {                
 					if (req.query.hasOwnProperty("code")) {				
 						var code_list =  req.query.code.split(',');
-						for(let i = 0; i < code_list.length; i++)
-						{
+						for(let i = 0; i < code_list.length; i++) {
 							if (row.code == code_list[i]) {
 								codes[key.concat(code_list[i])] = row.incident_type;
 							}
@@ -58,11 +57,10 @@ app.get('/codes', (req, res, next) => {
 	})
 	.then(data=>{
 
-		if(req.query.hasOwnProperty("format") && req.query.format.toLowerCase() === "xml")
-		{
+		if(req.query.hasOwnProperty("format") && req.query.format.toLowerCase() === "xml") {
 			res.type("xml").send(json2xml.parse("codes", data)); 
 		}
-		else{
+		else {
 			res.type('json').send(codes);
 			console.log(codes);
 		} 
@@ -74,46 +72,41 @@ app.get('/neighborhoods', (req, res, next) => {
 	let neighborhoods = {};
 	let key = "N";
 
-	var myPromise = new Promise ((resolve,reject) => {
-		db.all('SELECT * FROM Neighborhoods ORDER BY neighborhood_number',(err,rows)=>{
+	var myPromise = new Promise ((resolve, reject) => {
+		db.all('SELECT * FROM Neighborhoods ORDER BY neighborhood_number', (err,rows) => {
 			if (err) {
 				reject (err);
-			} else {
+			} 
+			else {
 				rows.forEach(function (row){
-					if(req.query.hasOwnProperty("neighborhoodNumber")){
-							
-						var neighborhoodNumber_list =  req.query.code.split(',');
-						for(let i = 0; i < neighborhoodNumber_list.length; i++)
-						{
-							if(row.neighborhood_number == neighborhoodNumber_list[i])
-							{
+					if(req.query.hasOwnProperty("id")) {
+						var neighborhoodNumber_list =  req.query.id.split(',');
+						for(let i = 0; i < neighborhoodNumber_list.length; i++) {
+							if(row.neighborhood_number == neighborhoodNumber_list[i]) {
 								neighborhoods[key.concat(neighborhoodNumber_list[i])] = row.neighborhood_name;
 							}
 						}
 					}
-					else{
+					else {
 						neighborhoods[key.concat(row.neighborhood_number)] = row.neighborhood_name;
 					}
-	
 				})
 			}
 			resolve(neighborhoods);
 		});
 	})
-	.then(data=>{
-
-		if(req.query.hasOwnProperty("format") && req.query.format.toLowerCase() === "xml")
-		{
+	.then(data => {
+		if(req.query.hasOwnProperty("format") && req.query.format.toLowerCase() === "xml") {
 			res.type("xml").send(json2xml.parse("neighborhood", data)); 
 		}
-		else{
+		else {
 			res.type('json').send(neighborhoods);
 			console.log(neighborhoods);
 		} 
 	})
 });
 
-app.get('/incidents', (req, res, next) => {
+app.get('/incidents', (req, res) => {
 	let incidents = {};
 	let key = "I";
 	
@@ -265,7 +258,55 @@ app.get('/incidents', (req, res, next) => {
 	})
 });
 
-app.put('/new-incident',(req,res) => {
+app.put('/new-incident',(req, res) => {
+	let new_incident = {
+		case_number: req.body.case_number
+	}
+
+	if(req.body.hasOwnProperty("case_number") == false) {
+        res.status(500).send("Need a case number");
+	}
+	
+	if(req.body.hasOwnProperty("date")) {
+        new_incident["date_time"] = req.body.date;
+    }
+    if(req.body.hasOwnProperty("time")) {
+        new_incident["date_time"] = new_incident.date_time + "T" + req.body.time;
+    }
+    if(req.body.hasOwnProperty("code")) {
+        new_incident["code"] = parseInt(req.body.code);
+    }
+    if(req.body.hasOwnProperty("incident")) {
+        new_incident["incident"] = req.body.incident;
+    }
+    if(req.body.hasOwnProperty("police_grid")) {
+        new_incident["police_grid"] = parseInt(req.body.police_grid);
+    }
+    if(req.body.hasOwnProperty("neighborhood_number")) {
+        new_incident["neighborhood_number"] = parseInt(req.body.neighborhood_number);
+    }
+    if(req.body.hasOwnProperty("block")) {
+        new_incident["block"] = req.body.block;
+	}
+	
+	db.all("SELECT * FROM Incidents WHERE case_number = ?", [new_incident.case_number], (err, row) => {
+        if (row.length > 0) {
+            res.status(500).send("The case number already exists");
+        }
+        else if (err) {
+            res.status(500).send("Error. Can't access the database");
+		}
+		else {
+			db.run("INSERT INTO incidents", [new_incident.case_number, new_incident.date_time, new_incident.code, new_incident.incident, new_incident.police_grid, new_incident.neighborhood_number, new_incident.block], (err) => {
+        		if(err) {
+					res.status(500).send("Error. Can't insert value into the database");
+				}
+				else {
+					res.send("New incident added to the database");
+				}
+    		});
+		}
+    });
 
 });
 

@@ -295,7 +295,7 @@ app.put('/new-incident',(req, res) => {
 		else {
 			db.run("INSERT INTO incidents VALUES (?, ?, ?, ?, ?, ?, ?)", [new_incident.case_number, new_incident.date_time, new_incident.code, new_incident.incident, new_incident.police_grid, new_incident.neighborhood_number, new_incident.block], (err) => {
         		if(err) {
-					res.status(500).send("Error. Can't insert value into the database. Error: "+err);
+					res.status(500).send("Error. Can't insert value into the database. "+err);
 				}
 				else {
 					res.send("New incident added to the database");

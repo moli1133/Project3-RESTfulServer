@@ -19,7 +19,7 @@ var port = 8000;
 app.use(express.static(public_dir));
 app.use(bodyParser.urlencoded({extended: true}));
 
-var db = new sqlite3.Database(db_filename, sqlite3.OPEN_READONLY, (err) => {
+var db = new sqlite3.Database(db_filename, sqlite3.OPEN_READWRITE, (err) => {
     if (err) {
         console.log('Error opening ' + db_filename);
     }

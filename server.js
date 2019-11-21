@@ -286,7 +286,7 @@ app.put('/new-incident',(req, res) => {
 	}
 	
 	db.all("SELECT * FROM Incidents WHERE case_number = ?", [new_incident.case_number], (err, row) => {
-        if (row.length > 0) {
+		if (row.length > 0) {
             res.status(500).send("The case number already exists");
         }
         else if (err) {
@@ -303,7 +303,6 @@ app.put('/new-incident',(req, res) => {
     		});
 		}
     });
-
 });
 
 function WriteHtml(res, html) {

@@ -8,7 +8,7 @@ var express = require('express');
 var sqlite3 = require('sqlite3');
 var bodyParser = require('body-parser');
 var json2xml = require("js2xmlparser");
-
+var SqlString = require('sqlstring');
 
 var public_dir = path.join(__dirname, 'public');
 var db_filename = path.join(__dirname, 'db', 'stpaul_crime.sqlite3');
@@ -109,40 +109,93 @@ app.get('/neighborhoods', (req, res, next) => {
 app.get('/incidents', (req, res) => {
 	let incidents = {};
 	let key = "I";
+	let sql = 'SELECT * FROM Incidents '
+	let where = false;
+	let and = false;
 	
 	//Set start_date
-	var has_start_date = false;
 	if(req.query.hasOwnProperty("start_date")) {
-		has_start_date = true;
 		var start = new Date(req.query.start_date);
+		
+		if(!where) {
+			sql+='WHERE ';
+			where=true;
+		}
+		
+		sql+= 'Incidents.date_time >= ' + SqlString.escape(req.query.start_date) + ' AND ';
+		and = true;
 	}
 	
 	//Set end_date
-	var has_end_date = false;
 	if(req.query.hasOwnProperty("end_date")) {
-		has_end_date = true;
 		var end = new Date(req.query.end_date);
+		
+		if(!where) {
+			sql+='WHERE ';
+			where=true;
+		}
+		
+		sql+= 'Incidents.date_time <= ' + SqlString.escape(req.query.end_date) + ' AND ';
+		and = true;
 	}
 	
 	//Set code
-	var has_code = false;
 	if(req.query.hasOwnProperty("code")) {
-		has_code = true;
 		var query_codes = req.query.code.split(",");
+		
+		if(!where) {
+			sql+='WHERE ';
+			where=true;
+		}
+		
+		sql+="(";
+		query_codes.forEach(function (this_code) {
+			sql+= 'Incidents.code = ' + SqlString.escape(this_code) + ' OR ';
+		})
+		sql=sql.slice(0, -4);
+		sql+=") AND ";
+		and = true;
 	}
 	
 	//Set grid
-	var has_grid = false;
 	if(req.query.hasOwnProperty("grid")) {
-		has_grid = true;
 		var query_grids = req.query.grid.split(",");
+		
+		if(!where) {
+			sql+='WHERE ';
+			where=true;
+		}
+		
+		sql+="(";
+		query_grids.forEach(function (this_grid) {
+			sql+= 'Incidents.police_grid = ' + SqlString.escape(this_grid) + ' OR ';
+		})
+		sql=sql.slice(0, -4);
+		sql+=") AND ";
+		and = true;
 	}
 	
 	//Set id
-	var has_id = false;
 	if(req.query.hasOwnProperty("id")) {
-		has_id = true;
 		var query_ids = req.query.id.split(",");
+		
+		if(!where) {
+			sql+='WHERE ';
+			where=true;
+		}
+		
+		query_ids.forEach(function (this_id) {
+			sql+= 'Incidents.neighborhood_number = ' + SqlString.escape(this_id) + ' AND ';
+		})		
+		and = true;
+		
+		sql+="(";
+		query_ids.forEach(function (this_id) {
+			sql+= 'Incidents.neighborhood_number = ' + SqlString.escape(this_id) + ' OR ';
+		})
+		sql=sql.slice(0, -4);
+		sql+=") AND ";
+		and = true;
 	}
 
 	//Set limit
@@ -153,12 +206,20 @@ app.get('/incidents', (req, res) => {
 		limit=10000;
 	}
 	
+	if(and)
+	{
+		sql=sql.slice(0, -4); 
+	}
+	
+	sql += 'ORDER BY date_time DESC';
+	//console.log('SQL: '+sql);
 	
 	var myPromise = new Promise ((resolve,reject) => {
-		db.all('SELECT * FROM Incidents ORDER BY date_time DESC ',(err,rows)=>{
+		db.all(sql,(err,rows)=>{
 			if (err) {
-				reject (err);
+				reject(err);
 			} else {
+
 				let num_rows=Object.keys(rows).length;
 				for(let i = 0; i < num_rows; i++) {
 					let id=key.concat("",rows[i].case_number);
@@ -171,74 +232,12 @@ app.get('/incidents', (req, res) => {
 					incidents[id]["neighborhood_number"]=rows[i].neighborhood_number;
 					incidents[id]["block"]=rows[i].block;
 					
-					//Flag indicating this row has been removed from JSON output
-					let deleted_json = false;
-					
-					//start_date
-					if(has_start_date){
-						let row_date = new Date(incidents[id].date);
-						if(start>row_date) {
-							delete incidents[id];
-							deleted_json=true;
-						}
-					}
-					
-					//end_date
-					if(has_end_date && !deleted_json){
-						let row_date = new Date(incidents[id].date);
-						if(end<row_date) {
-							delete incidents[id];
-							deleted_json=true;
-						}
-					}
-					
-					//code
-					if(has_code && !deleted_json){
-						let contains_target = false;
-						query_codes.forEach(function (this_code) {
-							if(parseInt(this_code)===incidents[id].code) {
-								contains_target=true;
-							}
-						})
-						if(!contains_target) {
-							delete incidents[id];
-							deleted_json=true;
-						}
-					}
-					
-					//grid
-					if(has_grid && !deleted_json){
-						let contains_target = false;
-						query_grids.forEach(function (this_grid) {
-							if(parseInt(this_grid)===incidents[id].police_grid) {
-								contains_target=true;
-							}
-						})
-						if(!contains_target) {
-							delete incidents[id];
-							deleted_json=true;
-						}
-					}
-					
-					//id
-					if(has_id && !deleted_json){
-						let contains_target = false;
-						query_ids.forEach(function (this_id) {
-							if(parseInt(this_id)===incidents[id].neighborhood_number) {
-								contains_target=true;
-							}
-						})
-						if(!contains_target) {
-							delete incidents[id];
-							deleted_json=true;
-						}
-					}
-					
-					//Check if limit has been reached
-					if(Object.keys(incidents).length === limit) {
-						break;
+					//Check if limit has been reached, breaks out of loop if it is
+					if(i === limit-1) {
+						i = num_rows;
 					}
 				}
+				
 			}
 			resolve(incidents);
 		});
@@ -252,7 +251,7 @@ app.get('/incidents', (req, res) => {
 		}
 		else{
 			res.type('json').send(incidents);
-			console.log(incidents);
+			//console.log(incidents);
 		} 
 		
 	})
